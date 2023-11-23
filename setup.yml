@@ -7,4 +7,6 @@
     - grafana-loki-promtail
     - grafana-prom-node
     - uptime-kuma
+    - node-exporter
+    -
     

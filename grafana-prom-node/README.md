@@ -58,7 +58,7 @@ docker exec -it grafana bash
 cd grafana/conf/defaults.ini
 ```
 
-- ### Use [Transfer.sh](transfer.sh) to curl the defaults.ini file into your host system.
+- ### Use [Transfer.sh](https://transfer.sh/) to curl the defaults.ini file into your host system.
 - ### Edit the file and change the capture value to true. [Doc](https://grafana.com/docs/grafana/latest/alerting/manage-notifications/images-in-notifications/#troubleshooting)
 
 <p align="center">

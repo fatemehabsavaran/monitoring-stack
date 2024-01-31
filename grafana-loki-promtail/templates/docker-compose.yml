@@ -1,0 +1,67 @@
+services:
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    # volumes:
+    #    - loki-data:/loki
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    # ports:
+    #   - "3000:3000"
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SERVER_ROOT_URL=example
+      - GF_SERVER_DOMAIN=example
+      - GF_SECURITY_ADMIN_USER=example
+      - GF_SECURITY_ADMIN_PASSWORD=example
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_RENDERING_SERVER_URL=http://renderer:8081/render
+      - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+      - GF_LOG_FILTERS=rendering:debug
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.grafana.entrypoints=http,https"
+      - "traefik.http.routers.grafana.rule=Host(`hostname`)"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    networks:
+      - loki
+      - web
+  
+networks:
+  loki:
+  web:
+    external: true
+
+volumes:
+  grafana-data:

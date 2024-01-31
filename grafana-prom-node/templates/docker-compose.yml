@@ -1,0 +1,84 @@
+services:
+   grafana:
+    image: grafana/grafana:10.2.0-ubuntu
+    container_name: grafana
+    restart: always
+    environment:
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana:/var/lib/grafana
+      - ./defaults.ini:/usr/share/grafana/conf/defaults.ini
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.grafana.entrypoints=http,https"
+      - "traefik.http.routers.grafana.rule=Host(`hostname`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+    networks:
+      - web
+      - prom
+
+
+   node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.ignored-mount-points
+      - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+    networks:
+      - prom
+
+
+   prometheus:
+    image: prom/prometheus:v2.48.0-rc.2
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./prometheus.yml/:/etc/prometheus/
+      - prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.retention.size=50GB'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+  
+    networks:
+      - prom
+  
+
+   renderer:
+    image: grafana/grafana-image-renderer:3.8.4
+    container_name: renderer
+    restart: always
+    depends_on:
+      - prometheus
+    networks:
+      - prom
+
+networks:
+  web:
+    external: true
+  prom:
+    internal: true 
+
+volumes:
+  grafana:
+    name: grafana
+  prometheus:
+    name: prometheus

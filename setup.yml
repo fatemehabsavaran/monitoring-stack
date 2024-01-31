@@ -1,0 +1,11 @@
+- name: Play for initializing server
+  hosts: main
+  roles:
+    - essentials
+    - docker
+    - traefik
+    - grafana-loki-promtail
+    - grafana-prom-node
+    - uptime-kuma
+    - node-exporter
+    

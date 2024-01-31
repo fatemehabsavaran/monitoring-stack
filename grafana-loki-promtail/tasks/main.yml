@@ -1,0 +1,29 @@
+- name: Create loki network
+  community.docker.docker_network:
+    name: loki
+
+
+- name: Ensure directories exists
+  ansible.builtin.file:
+    dest: "{{ item }}"
+    state: directory
+    mode: '0644'
+  loop:
+    - ~/compose
+    - ~/compose/grafana-loki-promtail
+
+- name: Ensure docker-compose file has been updated
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: ~/compose/grafana-loki-promtail/
+    mode: '0644'
+  loop:
+    - docker-compose.yml
+    - local-config.yml
+    - promtail-config.yml
+- name: Ensure grafana-loki-promtail compose files are up
+  community.docker.docker_compose:
+    state: present
+    project_src: ~/compose/grafana-loki-promtail/
+    files:
+      - docker-compose.yml
